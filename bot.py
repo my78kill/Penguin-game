@@ -1,4 +1,5 @@
 import os
+import threading
 from flask import Flask
 from telegram import InlineQueryResultGame
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, InlineQueryHandler
@@ -6,7 +7,7 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, InlineQu
 TOKEN = os.getenv("BOT_TOKEN")
 
 GAME_SHORT_NAME = "penguin_runner"
-GAME_URL = "https://YOUR-RENDER-URL.onrender.com/game/index.html"
+GAME_URL = "https://your-game-url.onrender.com"
 
 app = Flask(__name__)
 
@@ -40,13 +41,19 @@ def inline(update, context):
 
     query.answer(results)
 
-updater = Updater(TOKEN)
+def run_bot():
+    updater = Updater(TOKEN)
+    dp = updater.dispatcher
 
-dp = updater.dispatcher
+    dp.add_handler(CommandHandler("play", play))
+    dp.add_handler(CallbackQueryHandler(button))
+    dp.add_handler(InlineQueryHandler(inline))
 
-dp.add_handler(CommandHandler("play", play))
-dp.add_handler(CallbackQueryHandler(button))
-dp.add_handler(InlineQueryHandler(inline))
+    updater.start_polling()
+    updater.idle()
 
-updater.start_polling()
-updater.idle()
+threading.Thread(target=run_bot).start()
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
